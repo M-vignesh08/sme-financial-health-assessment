@@ -27,3 +27,4 @@ async def upload_financials(file: UploadFile = File(...)):
 
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
+
