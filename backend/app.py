@@ -51,7 +51,7 @@ async def upload_financials(file: UploadFile = File(...)):
 
 
 # --------------------------------------------------
-# PHASE 2A: FINANCIAL INTELLIGENCE (METRICS + ANALYSIS)
+# PHASE 2A: FINANCIAL INTELLIGENCE
 # --------------------------------------------------
 @app.post("/analyze-financials")
 async def analyze_financials(file: UploadFile = File(...)):
@@ -61,23 +61,24 @@ async def analyze_financials(file: UploadFile = File(...)):
         with open(file_path, "wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
 
-        # Reuse Phase 1 parser
+        # Phase 1 parsing (validation)
         parsed = parse_financial_file(file_path)
 
-        # Convert parsed preview to DataFrame
-        df = pd.DataFrame(parsed["preview"])
+        # 🔥 Correct DataFrame creation
+        df = pd.read_csv(file_path)
 
         if df.empty:
-            raise ValueError("Parsed data is empty")
+            raise ValueError("Uploaded file contains no data")
 
         # Normalize column names
-        df.columns = [col.lower() for col in df.columns]
+        df.columns = [col.strip().lower() for col in df.columns]
 
         # -----------------------------
-        # COMPUTE NUMERICAL METRICS
+        # NUMERICAL METRICS
         # -----------------------------
         basic_metrics = compute_basic_metrics(df)
         cashflow_metrics = compute_cashflow_metrics(df)
+
         health_score = compute_health_score(
             basic_metrics,
             cashflow_metrics
