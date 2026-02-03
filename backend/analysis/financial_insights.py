@@ -1,8 +1,4 @@
 def generate_trends(df, revenue_col, expense_col):
-    """
-    Detect simple revenue and expense trends.
-    """
-
     if len(df) < 2:
         return {
             "revenue_trend": "insufficient data",
@@ -12,19 +8,8 @@ def generate_trends(df, revenue_col, expense_col):
     revenue_change = df[revenue_col].iloc[-1] - df[revenue_col].iloc[0]
     expense_change = df[expense_col].iloc[-1] - df[expense_col].iloc[0]
 
-    if revenue_change > 0:
-        revenue_trend = "increasing"
-    elif revenue_change < 0:
-        revenue_trend = "decreasing"
-    else:
-        revenue_trend = "stable"
-
-    if expense_change > 0:
-        expense_trend = "increasing"
-    elif expense_change < 0:
-        expense_trend = "decreasing"
-    else:
-        expense_trend = "stable"
+    revenue_trend = "increasing" if revenue_change > 0 else "decreasing" if revenue_change < 0 else "stable"
+    expense_trend = "increasing" if expense_change > 0 else "decreasing" if expense_change < 0 else "stable"
 
     return {
         "revenue_trend": revenue_trend,
@@ -33,10 +18,6 @@ def generate_trends(df, revenue_col, expense_col):
 
 
 def generate_risk_flags(basic_metrics, cashflow_metrics):
-    """
-    Identify financial risk signals.
-    """
-
     risks = []
 
     if basic_metrics["net_profit"] < 0:
@@ -52,41 +33,25 @@ def generate_risk_flags(basic_metrics, cashflow_metrics):
 
 
 def generate_recommendations(risk_flags):
-    """
-    Generate business recommendations based on risks.
-    """
-
     recommendations = []
 
     for risk in risk_flags:
         if "loss" in risk.lower():
-            recommendations.append(
-                "Review pricing strategy and reduce operational costs"
-            )
+            recommendations.append("Reduce costs and review pricing")
 
         if "profit margin" in risk.lower():
-            recommendations.append(
-                "Improve margins by optimizing expenses or increasing revenue"
-            )
+            recommendations.append("Improve profit margin")
 
         if "cashflow" in risk.lower():
-            recommendations.append(
-                "Improve receivables collection and manage payables efficiently"
-            )
+            recommendations.append("Improve cashflow management")
 
     if not recommendations:
-        recommendations.append(
-            "Financial health is stable. Maintain current strategy"
-        )
+        recommendations.append("Business is financially stable")
 
     return recommendations
 
 
 def explain_health_score(basic_metrics, cashflow_metrics):
-    """
-    Explain how the health score was derived.
-    """
-
     explanation = []
 
     if basic_metrics["net_profit"] > 0:
@@ -95,11 +60,11 @@ def explain_health_score(basic_metrics, cashflow_metrics):
         explanation.append("-20: Net profit is negative")
 
     if basic_metrics["profit_margin"] > 20:
-        explanation.append("+15: Strong profit margin (>20%)")
+        explanation.append("+15: Strong profit margin")
     elif basic_metrics["profit_margin"] > 10:
-        explanation.append("+10: Moderate profit margin (10–20%)")
+        explanation.append("+10: Moderate profit margin")
     else:
-        explanation.append("0: Low profit margin (<10%)")
+        explanation.append("0: Low profit margin")
 
     if cashflow_metrics["cashflow_status"] == "positive":
         explanation.append("+15: Positive cashflow")
