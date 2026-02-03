@@ -13,6 +13,13 @@ from backend.analysis.financial_metrics import (
     compute_cashflow_metrics,
     compute_health_score
 )
+from backend.analysis.financial_insights import (
+    generate_trends,
+    generate_risk_flags,
+    generate_recommendations,
+    explain_health_score
+)
+
 from backend.analysis.financial_analysis import analyze_financial_health
 
 
@@ -134,6 +141,22 @@ async def analyze_financials(file: UploadFile = File(...)):
             basic_metrics,
             cashflow_metrics
         )
+        # -----------------------------
+        # PHASE 2B: ADVANCED INSIGHTS
+        # -----------------------------
+        trends = generate_trends(df, revenue_col, expense_col)
+
+        risk_flags = generate_risk_flags(
+            basic_metrics,
+            cashflow_metrics
+        )
+
+        recommendations = generate_recommendations(risk_flags)
+
+        health_score_explanation = explain_health_score(
+            basic_metrics,
+            cashflow_metrics
+        )
 
         # -----------------------------
         # BUSINESS INTERPRETATION
@@ -149,6 +172,10 @@ async def analyze_financials(file: UploadFile = File(...)):
             "basic_metrics": basic_metrics,
             "cashflow_metrics": cashflow_metrics,
             "health_score": health_score,
+            "health_score_explanation": health_score_explanation,
+            "trends": trends,
+            "risk_flags": risk_flags,
+            "recommendations": recommendations,
             "analysis": analysis
         }
 
