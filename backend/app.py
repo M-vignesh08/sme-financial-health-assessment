@@ -124,9 +124,12 @@ async def analyze_financials(file: UploadFile = File(...)):
         # NUMERICAL METRICS
         # -----------------------------
         basic_metrics = compute_basic_metrics(df, revenue_col, expense_col)
-        cashflow_metrics = compute_cashflow_metrics(df, cashflow_col)
-
-
+        cashflow_metrics = compute_cashflow_metrics(
+            df,
+            revenue_col,
+            expense_col,
+            cashflow_col
+        )
         health_score = compute_health_score(
             basic_metrics,
             cashflow_metrics
