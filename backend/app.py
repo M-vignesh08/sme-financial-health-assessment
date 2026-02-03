@@ -1,18 +1,20 @@
 from fastapi import FastAPI, UploadFile, File, HTTPException
-from backend.analysis.financial_analysis import analyze_financial_health
-
 import shutil
 import os
 import pandas as pd
 
+# Phase 1 utilities
 from backend.utils.file_parser import parse_financial_file
 from backend.models.schemas import UploadResponse
 
+# Phase 2A intelligence
 from backend.analysis.financial_metrics import (
     compute_basic_metrics,
     compute_cashflow_metrics,
     compute_health_score
 )
+from backend.analysis.financial_analysis import analyze_financial_health
+
 
 # --------------------------------------------------
 # APP CONFIG
@@ -24,6 +26,7 @@ app = FastAPI(
 
 UPLOAD_DIR = "uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
+
 
 # --------------------------------------------------
 # PHASE 1: FILE UPLOAD + PARSING
@@ -48,7 +51,7 @@ async def upload_financials(file: UploadFile = File(...)):
 
 
 # --------------------------------------------------
-# PHASE 2A: FINANCIAL INTELLIGENCE
+# PHASE 2A: FINANCIAL INTELLIGENCE (METRICS + ANALYSIS)
 # --------------------------------------------------
 @app.post("/analyze-financials")
 async def analyze_financials(file: UploadFile = File(...)):
@@ -70,7 +73,9 @@ async def analyze_financials(file: UploadFile = File(...)):
         # Normalize column names
         df.columns = [col.lower() for col in df.columns]
 
-        # Compute metrics
+        # -----------------------------
+        # COMPUTE NUMERICAL METRICS
+        # -----------------------------
         basic_metrics = compute_basic_metrics(df)
         cashflow_metrics = compute_cashflow_metrics(df)
         health_score = compute_health_score(
@@ -78,11 +83,21 @@ async def analyze_financials(file: UploadFile = File(...)):
             cashflow_metrics
         )
 
+        # -----------------------------
+        # BUSINESS INTERPRETATION
+        # -----------------------------
+        analysis = analyze_financial_health(
+            basic_metrics,
+            cashflow_metrics,
+            health_score
+        )
+
         return {
             "status": "success",
             "basic_metrics": basic_metrics,
             "cashflow_metrics": cashflow_metrics,
-            "health_score": health_score
+            "health_score": health_score,
+            "analysis": analysis
         }
 
     except Exception as e:
