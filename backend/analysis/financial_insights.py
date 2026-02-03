@@ -56,4 +56,54 @@ def generate_recommendations(risk_flags):
     Generate business recommendations based on risks.
     """
 
-    recommend
+    recommendations = []
+
+    for risk in risk_flags:
+        if "loss" in risk.lower():
+            recommendations.append(
+                "Review pricing strategy and reduce operational costs"
+            )
+
+        if "profit margin" in risk.lower():
+            recommendations.append(
+                "Improve margins by optimizing expenses or increasing revenue"
+            )
+
+        if "cashflow" in risk.lower():
+            recommendations.append(
+                "Improve receivables collection and manage payables efficiently"
+            )
+
+    if not recommendations:
+        recommendations.append(
+            "Financial health is stable. Maintain current strategy"
+        )
+
+    return recommendations
+
+
+def explain_health_score(basic_metrics, cashflow_metrics):
+    """
+    Explain how the health score was derived.
+    """
+
+    explanation = []
+
+    if basic_metrics["net_profit"] > 0:
+        explanation.append("+20: Net profit is positive")
+    else:
+        explanation.append("-20: Net profit is negative")
+
+    if basic_metrics["profit_margin"] > 20:
+        explanation.append("+15: Strong profit margin (>20%)")
+    elif basic_metrics["profit_margin"] > 10:
+        explanation.append("+10: Moderate profit margin (10–20%)")
+    else:
+        explanation.append("0: Low profit margin (<10%)")
+
+    if cashflow_metrics["cashflow_status"] == "positive":
+        explanation.append("+15: Positive cashflow")
+    elif cashflow_metrics["cashflow_status"] == "negative":
+        explanation.append("-15: Negative cashflow")
+
+    return explanation
