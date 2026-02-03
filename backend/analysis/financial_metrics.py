@@ -1,14 +1,13 @@
 import pandas as pd
 
-def compute_basic_metrics(df: pd.DataFrame):
+
+def compute_basic_metrics(df: pd.DataFrame, revenue_col: str, expense_col: str):
     """
-    Expects columns:
-    - revenue
-    - expense
+    Computes basic financial metrics using dynamic column names.
     """
 
-    total_revenue = df["revenue"].sum()
-    total_expense = df["expense"].sum()
+    total_revenue = df[revenue_col].sum()
+    total_expense = df[expense_col].sum()
     net_profit = total_revenue - total_expense
 
     profit_margin = (
@@ -24,13 +23,24 @@ def compute_basic_metrics(df: pd.DataFrame):
     }
 
 
-def compute_cashflow_metrics(df: pd.DataFrame):
+def compute_cashflow_metrics(
+    df: pd.DataFrame,
+    revenue_col: str,
+    expense_col: str,
+    cashflow_col: str | None = None
+):
     """
-    Simple cashflow = revenue - expense per row
+    Computes cashflow metrics safely.
     """
 
-    df["cashflow"] = df["revenue"] - df["expense"]
-    avg_cashflow = df["cashflow"].mean()
+    # If cashflow column already exists, use it
+    if cashflow_col and cashflow_col in df.columns:
+        df[cashflow_col] = pd.to_numeric(df[cashflow_col], errors="coerce")
+        avg_cashflow = df[cashflow_col].mean()
+    else:
+        # Compute cashflow manually
+        df["__cashflow__"] = df[revenue_col] - df[expense_col]
+        avg_cashflow = df["__cashflow__"].mean()
 
     if avg_cashflow > 0:
         status = "positive"
@@ -45,7 +55,7 @@ def compute_cashflow_metrics(df: pd.DataFrame):
     }
 
 
-def compute_health_score(basic_metrics, cashflow_metrics):
+def compute_health_score(basic_metrics: dict, cashflow_metrics: dict):
     """
     Rule-based health score (0–100)
     """
