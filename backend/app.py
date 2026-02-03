@@ -21,11 +21,21 @@ from backend.analysis.financial_analysis import analyze_financial_health
 # --------------------------------------------------
 app = FastAPI(
     title="SME Financial Health Assessment API",
-    version="0.2.0"
+    version="0.2.1"  # 🔧 version bump
 )
 
 UPLOAD_DIR = "uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
+
+
+# --------------------------------------------------
+# HELPER: RESILIENT COLUMN FINDER
+# --------------------------------------------------
+def find_column(df, keywords):
+    for col in df.columns:
+        if any(keyword in col for keyword in keywords):
+            return col
+    return None
 
 
 # --------------------------------------------------
@@ -61,17 +71,53 @@ async def analyze_financials(file: UploadFile = File(...)):
         with open(file_path, "wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
 
-        # Phase 1 parsing (validation)
-        parsed = parse_financial_file(file_path)
+        # Phase 1 validation
+        parse_financial_file(file_path)
 
-        # 🔥 Correct DataFrame creation
+        # Load CSV
         df = pd.read_csv(file_path)
 
+        # -----------------------------
+        # DEFENSIVE CHECKS
+        # -----------------------------
         if df.empty:
-            raise ValueError("Uploaded file contains no data")
+            raise ValueError("Uploaded file contains no financial records")
 
         # Normalize column names
         df.columns = [col.strip().lower() for col in df.columns]
+
+        # -----------------------------
+        # RESILIENT COLUMN DETECTION
+        # -----------------------------
+        revenue_col = find_column(df, ["revenue", "sales", "income"])
+        expense_col = find_column(df, ["expense", "cost"])
+        cashflow_col = find_column(df, ["cashflow", "cash_flow", "net_cash"])
+
+        missing_cols = []
+        if not revenue_col:
+            missing_cols.append("revenue")
+        if not expense_col:
+            missing_cols.append("expense")
+
+        if missing_cols:
+            raise ValueError(
+                f"Missing required financial columns: {', '.join(missing_cols)}. "
+                f"Available columns: {list(df.columns)}"
+            )
+
+        # -----------------------------
+        # NUMERIC SAFETY
+        # -----------------------------
+        df[revenue_col] = pd.to_numeric(df[revenue_col], errors="coerce")
+        df[expense_col] = pd.to_numeric(df[expense_col], errors="coerce")
+
+        if cashflow_col:
+            df[cashflow_col] = pd.to_numeric(df[cashflow_col], errors="coerce")
+
+        df.dropna(subset=[revenue_col, expense_col], inplace=True)
+
+        if df.empty:
+            raise ValueError("Financial columns contain no valid numeric data")
 
         # -----------------------------
         # NUMERICAL METRICS
@@ -101,5 +147,11 @@ async def analyze_financials(file: UploadFile = File(...)):
             "analysis": analysis
         }
 
+    except ValueError as ve:
+        raise HTTPException(status_code=400, detail=str(ve))
+
     except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(
+            status_code=500,
+            detail="Internal error during financial analysis"
+        )
