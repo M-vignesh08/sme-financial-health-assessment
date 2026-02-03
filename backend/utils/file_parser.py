@@ -5,7 +5,6 @@ def parse_financial_file(file_path: str):
     """
     Parse uploaded financial CSV/XLSX file into a pandas DataFrame
     """
-
     if not os.path.exists(file_path):
         raise ValueError("File not found")
 
