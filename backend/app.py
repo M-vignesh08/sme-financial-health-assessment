@@ -75,7 +75,8 @@ async def analyze_financials(file: UploadFile = File(...)):
         parse_financial_file(file_path)
 
         # Load CSV
-        df = pd.read_csv(file_path)
+        df = pd.read_csv(file_path, sep="\t")
+
 
         # -----------------------------
         # DEFENSIVE CHECKS
@@ -122,8 +123,9 @@ async def analyze_financials(file: UploadFile = File(...)):
         # -----------------------------
         # NUMERICAL METRICS
         # -----------------------------
-        basic_metrics = compute_basic_metrics(df)
-        cashflow_metrics = compute_cashflow_metrics(df)
+        basic_metrics = compute_basic_metrics(df, revenue_col, expense_col)
+        cashflow_metrics = compute_cashflow_metrics(df, cashflow_col)
+
 
         health_score = compute_health_score(
             basic_metrics,
