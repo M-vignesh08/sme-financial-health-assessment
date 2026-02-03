@@ -82,8 +82,7 @@ async def analyze_financials(file: UploadFile = File(...)):
         parse_financial_file(file_path)
 
         # Load CSV
-        df = pd.read_csv(file_path, sep="\t")
-
+        df = pd.read_csv(file_path)
 
         # -----------------------------
         # DEFENSIVE CHECKS
@@ -185,5 +184,5 @@ async def analyze_financials(file: UploadFile = File(...)):
     except Exception as e:
         raise HTTPException(
             status_code=500,
-            detail="Internal error during financial analysis"
+            detail=str(e)
         )
