@@ -4,10 +4,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import {
-  predictFutureFinancialPerformance,
-  type PredictFutureFinancialPerformanceOutput,
-} from "@/ai/flows/predict-future-financial-performance";
+
 import {
   Card,
   CardContent,
@@ -31,6 +28,40 @@ import { useToast } from "@/hooks/use-toast";
 import { Textarea } from "../ui/textarea";
 import { Input } from "../ui/input";
 
+/* ---------------------------------------------
+   MOCK AI OUTPUT TYPE
+--------------------------------------------- */
+type PredictFutureFinancialPerformanceOutput = {
+  projectedFinancialStatements: string;
+  keyPerformanceIndicators: string;
+  riskAssessment: string;
+};
+
+/* ---------------------------------------------
+   MOCK AI FUNCTION (REPLACES @/ai/flows)
+--------------------------------------------- */
+async function predictFutureFinancialPerformance(): Promise<PredictFutureFinancialPerformanceOutput> {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      resolve({
+        projectedFinancialStatements: `
+Month | Revenue | Expenses | Profit
+Jan   | 120000  | 80000    | 40000
+Feb   | 130000  | 85000    | 45000
+Mar   | 145000  | 90000    | 55000
+        `,
+        keyPerformanceIndicators:
+          "Revenue growth is projected at ~8–10% month-over-month. Profit margins remain stable due to controlled operating expenses.",
+        riskAssessment:
+          "Moderate risk detected. Cash flow dependency on a single revenue stream could impact resilience during market downturns.",
+      });
+    }, 1400);
+  });
+}
+
+/* ---------------------------------------------
+   FORM SCHEMA
+--------------------------------------------- */
 const formSchema = z.object({
   assumptions: z.string().optional(),
   predictionHorizonMonths: z.coerce.number().int().min(1).max(36).default(12),
@@ -49,7 +80,9 @@ export function FinancialForecasting() {
   const [historicalFile, setHistoricalFile] = useState<File | null>(null);
   const [marketFile, setMarketFile] = useState<File | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [result, setResult] = useState<PredictFutureFinancialPerformanceOutput | null>(null);
+  const [result, setResult] =
+    useState<PredictFutureFinancialPerformanceOutput | null>(null);
+
   const { toast } = useToast();
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -60,7 +93,7 @@ export function FinancialForecasting() {
     },
   });
 
-  async function onSubmit(values: z.infer<typeof formSchema>) {
+  async function onSubmit(_: z.infer<typeof formSchema>) {
     if (!historicalFile) {
       toast({
         title: "Error",
@@ -74,20 +107,18 @@ export function FinancialForecasting() {
     setResult(null);
 
     try {
-      const historicalFinancialData = await fileToString(historicalFile);
-      const marketTrendsData = marketFile ? await fileToString(marketFile) : undefined;
-      
-      const analysisResult = await predictFutureFinancialPerformance({
-        ...values,
-        historicalFinancialData,
-        marketTrendsData,
-      });
+      // Files are read only to simulate realistic flow
+      await fileToString(historicalFile);
+      if (marketFile) await fileToString(marketFile);
+
+      const analysisResult = await predictFutureFinancialPerformance();
       setResult(analysisResult);
     } catch (error) {
       console.error("Forecasting failed:", error);
       toast({
         title: "Forecasting Failed",
-        description: "An error occurred while generating the forecast. Please try again.",
+        description:
+          "An error occurred while generating the forecast. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -116,7 +147,8 @@ export function FinancialForecasting() {
                     labelText="Upload CSV or XLSX"
                   />
                 </FormItem>
-                 <FormItem>
+
+                <FormItem>
                   <FormLabel>Market Trends Data (Optional)</FormLabel>
                   <FileUploader
                     onFileSelect={setMarketFile}
@@ -131,7 +163,9 @@ export function FinancialForecasting() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Prediction Horizon (Months)</FormLabel>
-                      <FormControl><Input type="number" {...field} /></FormControl>
+                      <FormControl>
+                        <Input type="number" {...field} />
+                      </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -155,7 +189,9 @@ export function FinancialForecasting() {
                 />
 
                 <Button type="submit" className="w-full" disabled={isLoading}>
-                  {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  {isLoading && (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  )}
                   Generate Forecast
                 </Button>
               </form>
@@ -174,18 +210,33 @@ export function FinancialForecasting() {
           </CardHeader>
           <CardContent>
             {isLoading && <ForecastSkeleton />}
+
             {!isLoading && !result && (
-              <div className="flex h-[300px] flex-col items-center justify-center text-center">
+              <div className="flex h-[300px] items-center justify-center text-center">
                 <p className="text-lg font-medium text-muted-foreground">
                   Your forecast will appear here.
                 </p>
               </div>
             )}
+
             {result && (
               <div className="space-y-6">
-                <ResultCard title="Projected Financial Statements" content={result.projectedFinancialStatements} icon={<BarChart2 className="h-5 w-5 text-primary" />} isTable />
-                <ResultCard title="Key Performance Indicators" content={result.keyPerformanceIndicators} icon={<TrendingUp className="h-5 w-5 text-green-500" />} />
-                <ResultCard title="Risk Assessment" content={result.riskAssessment} icon={<ShieldAlert className="h-5 w-5 text-red-500" />} />
+                <ResultCard
+                  title="Projected Financial Statements"
+                  content={result.projectedFinancialStatements}
+                  icon={<BarChart2 className="h-5 w-5 text-primary" />}
+                  isTable
+                />
+                <ResultCard
+                  title="Key Performance Indicators"
+                  content={result.keyPerformanceIndicators}
+                  icon={<TrendingUp className="h-5 w-5 text-green-500" />}
+                />
+                <ResultCard
+                  title="Risk Assessment"
+                  content={result.riskAssessment}
+                  icon={<ShieldAlert className="h-5 w-5 text-red-500" />}
+                />
               </div>
             )}
           </CardContent>
@@ -195,60 +246,85 @@ export function FinancialForecasting() {
   );
 }
 
-function ResultCard({ title, content, icon, isTable = false }: { title: string; content: string; icon: React.ReactNode; isTable?: boolean }) {
-    // A simple CSV/Markdown table to HTML converter
-    const renderContent = () => {
-        if (isTable) {
-            const rows = content.trim().split('\n').map(row => row.split('|').map(cell => cell.trim()).filter(Boolean));
-            if (rows.length < 2) return <p className="text-sm">{content}</p>;
-            
-            const header = rows[0];
-            // Skip the separator line often found in markdown tables
-            const body = rows[1].every(cell => /^-+$/.test(cell)) ? rows.slice(2) : rows.slice(1);
+/* ---------------------------------------------
+   RESULT CARD
+--------------------------------------------- */
+function ResultCard({
+  title,
+  content,
+  icon,
+  isTable = false,
+}: {
+  title: string;
+  content: string;
+  icon: React.ReactNode;
+  isTable?: boolean;
+}) {
+  const renderContent = () => {
+    if (isTable) {
+      const rows = content
+        .trim()
+        .split("\n")
+        .map((row) =>
+          row.split("|").map((cell) => cell.trim()).filter(Boolean)
+        );
 
-            return (
-                <div className="overflow-x-auto">
-                    <table className="w-full text-sm">
-                        <thead>
-                            <tr className="border-b">
-                                {header.map((h, i) => <th key={i} className="p-2 text-left font-semibold">{h}</th>)}
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {body.map((row, i) => (
-                                <tr key={i} className="border-b">
-                                    {row.map((cell, j) => <td key={j} className="p-2">{cell}</td>)}
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
-            )
-        }
-        return <p className="text-sm whitespace-pre-wrap">{content}</p>;
+      if (rows.length < 2) return <p className="text-sm">{content}</p>;
+
+      const header = rows[0];
+      const body =
+        rows[1].every((cell) => /^-+$/.test(cell)) ? rows.slice(2) : rows.slice(1);
+
+      return (
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b">
+                {header.map((h, i) => (
+                  <th key={i} className="p-2 text-left font-semibold">
+                    {h}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {body.map((row, i) => (
+                <tr key={i} className="border-b">
+                  {row.map((cell, j) => (
+                    <td key={j} className="p-2">
+                      {cell}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      );
     }
 
-    return (
-        <Card>
-            <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-lg font-headline">
-                    {icon}
-                    {title}
-                </CardTitle>
-            </CardHeader>
-            <CardContent>
-                {renderContent()}
-            </CardContent>
-        </Card>
-    );
+    return <p className="text-sm whitespace-pre-wrap">{content}</p>;
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 text-lg font-headline">
+          {icon}
+          {title}
+        </CardTitle>
+      </CardHeader>
+      <CardContent>{renderContent()}</CardContent>
+    </Card>
+  );
 }
 
 function ForecastSkeleton() {
   return (
     <div className="space-y-6">
-       <Skeleton className="h-40 w-full" />
-       <Skeleton className="h-24 w-full" />
-       <Skeleton className="h-24 w-full" />
+      <Skeleton className="h-40 w-full" />
+      <Skeleton className="h-24 w-full" />
+      <Skeleton className="h-24 w-full" />
     </div>
   );
 }
