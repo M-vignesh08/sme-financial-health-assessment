@@ -1,4 +1,6 @@
 from fastapi import FastAPI, UploadFile, File, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+
 import shutil
 import os
 import pandas as pd
@@ -30,6 +32,14 @@ app = FastAPI(
     title="SME Financial Health Assessment API",
     version="0.2.1"  # 🔧 version bump
 )
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],   # for development
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 
 UPLOAD_DIR = "uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
