@@ -1,5 +1,7 @@
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from backend.analysis.financial_analysis import generate_ai_insights
+
 
 import shutil
 import os
@@ -21,6 +23,8 @@ from backend.analysis.financial_insights import (
     generate_recommendations,
     explain_health_score
 )
+
+
 
 from backend.analysis.financial_analysis import analyze_financial_health
 
@@ -155,6 +159,12 @@ async def analyze_financials(file: UploadFile = File(...)):
             basic_metrics,
             cashflow_metrics
         )
+        ai_insights = generate_ai_insights(
+            basic_metrics=basic_metrics,
+            cashflow_metrics=cashflow_metrics,
+            health_score=health_score
+        )
+
 
         # -----------------------------
         # INSIGHTS
@@ -188,8 +198,10 @@ async def analyze_financials(file: UploadFile = File(...)):
             "trends": trends,
             "risk_flags": risk_flags,
             "recommendations": recommendations,
-            "analysis": analysis
+            "analysis": analysis,
+            "ai_insights": ai_insights
         }
+
 
     except ValueError as ve:
         raise HTTPException(status_code=400, detail=str(ve))
