@@ -82,7 +82,9 @@ async def analyze_financials(file: UploadFile = File(...)):
         parse_financial_file(file_path)
 
         # Load CSV
-        df = pd.read_csv(file_path)
+        # Load CSV / TSV / Excel-exported files safely
+        df = pd.read_csv(file_path, sep=None, engine="python")
+
 
         # -----------------------------
         # DEFENSIVE CHECKS
