@@ -52,6 +52,7 @@ type BackendAnalysisResult = {
   analysis: {
     summary: string;
   };
+  ai_insights: string[]; // ✅ ADDED
 };
 
 /* ------------------ FORM ------------------ */
@@ -217,6 +218,7 @@ export function FinancialStatementAnalysis() {
                   />
                 </div>
 
+                {/* SUMMARY */}
                 <Card>
                   <CardHeader>
                     <CardTitle className="text-lg font-headline">Summary</CardTitle>
@@ -225,6 +227,24 @@ export function FinancialStatementAnalysis() {
                     <p className="text-sm">{result.analysis.summary}</p>
                   </CardContent>
                 </Card>
+
+                {/* ✅ AI INSIGHTS (ADDED) */}
+                {result.ai_insights && result.ai_insights.length > 0 && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-lg font-headline">
+                        AI Financial Insights
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <ul className="list-disc ml-5 space-y-1 text-sm text-muted-foreground">
+                        {result.ai_insights.map((insight, index) => (
+                          <li key={index}>{insight}</li>
+                        ))}
+                      </ul>
+                    </CardContent>
+                  </Card>
+                )}
               </div>
             )}
           </CardContent>
