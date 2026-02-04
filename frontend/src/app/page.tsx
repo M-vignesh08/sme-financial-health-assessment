@@ -1,5 +1,7 @@
 "use client";
 
+export const dynamic = "force-dynamic";
+
 import React, { useState } from "react";
 import dynamic from "next/dynamic";
 
@@ -30,7 +32,7 @@ function DashboardOverviewSkeleton() {
 }
 
 /* ---------------------------------------------
-   Dynamic imports (ALL client-only)
+   Dynamic imports (client-only)
 --------------------------------------------- */
 const DashboardOverview = dynamic(
   () =>
@@ -90,7 +92,9 @@ const FinancialForecasting = dynamic(
 
 const Accounts = dynamic(
   () =>
-    import("@/components/features/accounts").then((mod) => mod.Accounts),
+    import("@/components/features/accounts").then(
+      (mod) => mod.Accounts
+    ),
   { ssr: false }
 );
 
