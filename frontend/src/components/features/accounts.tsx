@@ -34,11 +34,11 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 
-type Account = GetBankDataOutput["accounts"][0];
 type Bank = "HDFC" | "ICICI";
+type Account = GetBankDataOutput["accounts"][0];
 
 export function Accounts() {
-  const [isLoading, setIsLoading] = useState<Bank | false>(false);
+  const [isLoading, setIsLoading] = useState<Bank | null>(null);
   const [data, setData] = useState<GetBankDataOutput | null>(null);
   const [selectedAccount, setSelectedAccount] = useState<Account | null>(null);
   const [bankToVerify, setBankToVerify] = useState<Bank | null>(null);
@@ -57,28 +57,24 @@ export function Accounts() {
       }
       toast({
         title: "Connection Successful",
-        description: `Successfully connected to ${bank} and fetched account data.`,
+        description: `Successfully connected to ${bank} Bank.`,
       });
     } catch (error) {
-      console.error("Failed to fetch bank data:", error);
+      console.error(error);
       toast({
         title: "Fetch Failed",
-        description: `An error occurred while fetching ${bank} data. Please try again.`,
+        description: "Unable to fetch bank data.",
         variant: "destructive",
       });
     } finally {
-      setIsLoading(false);
+      setIsLoading(null);
     }
   }
 
-  const handleVerificationContinue = () => {
-    if (bankToVerify) {
-      handleFetchData(bankToVerify);
-    }
-    setBankToVerify(null);
-  };
-  
-  const transactions = selectedAccount ? data?.transactions[selectedAccount.id] ?? [] : [];
+  const transactions =
+    selectedAccount && data
+      ? data.transactions[selectedAccount.id] ?? []
+      : [];
 
   return (
     <div className="space-y-8">
@@ -86,105 +82,101 @@ export function Accounts() {
         <CardHeader>
           <CardTitle className="font-headline">Connect Bank Accounts</CardTitle>
           <CardDescription>
-            Fetch your bank account details and transactions from partner banks.
+            Securely fetch your account and transaction details.
           </CardDescription>
         </CardHeader>
         <CardContent className="flex gap-4">
-          <Button
-            onClick={() => setBankToVerify("HDFC")}
-            disabled={isLoading === "HDFC"}
-          >
+          <Button onClick={() => setBankToVerify("HDFC")}>
             {isLoading === "HDFC" && (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             )}
-            Connect to HDFC Bank
+            Connect HDFC
           </Button>
           <Button
-            onClick={() => setBankToVerify("ICICI")}
-            disabled={isLoading === "ICICI"}
             variant="secondary"
+            onClick={() => setBankToVerify("ICICI")}
           >
             {isLoading === "ICICI" && (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             )}
-            Connect to ICICI Bank
+            Connect ICICI
           </Button>
         </CardContent>
       </Card>
 
-      <AlertDialog open={!!bankToVerify} onOpenChange={(open) => !open && setBankToVerify(null)}>
+      <AlertDialog
+        open={!!bankToVerify}
+        onOpenChange={(open) => !open && setBankToVerify(null)}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2 font-headline">
-              <ShieldCheck className="text-primary" />
-              Secure Connection to {bankToVerify}
+            <AlertDialogTitle className="flex items-center gap-2">
+              <ShieldCheck />
+              Secure Bank Connection
             </AlertDialogTitle>
             <AlertDialogDescription>
-              You are being connected to the bank's secure portal. FinSight Advisor will have read-only access and will not store your login credentials.
+              This is a demo integration with read-only access.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleVerificationContinue}>
+            <AlertDialogAction
+              onClick={() => {
+                if (bankToVerify) handleFetchData(bankToVerify);
+                setBankToVerify(null);
+              }}
+            >
               Continue
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
 
-      {isLoading && !data && (
-        <div className="flex justify-center items-center p-8">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          <p className="ml-4 text-muted-foreground">Connecting to the bank and fetching data...</p>
-        </div>
-      )}
-
       {data && (
-        <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
-          <div className="md:col-span-1 space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div>
             <Card>
               <CardHeader>
-                <CardTitle className="font-headline text-lg">Your Accounts</CardTitle>
+                <CardTitle>Your Accounts</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                {data.accounts.length > 0 ? data.accounts.map((account) => (
-                  <Card 
-                    key={account.id} 
-                    className={`cursor-pointer transition-all ${selectedAccount?.id === account.id ? 'border-primary ring-2 ring-primary' : 'hover:border-primary/50'}`}
+                {data.accounts.map((account) => (
+                  <Card
+                    key={account.id}
                     onClick={() => setSelectedAccount(account)}
+                    className={cn(
+                      "cursor-pointer",
+                      selectedAccount?.id === account.id &&
+                        "border-primary ring-2 ring-primary"
+                    )}
                   >
                     <CardHeader>
-                      <CardTitle className="flex items-center gap-2 text-base font-headline">
-                        <Landmark className="h-5 w-5 text-accent" />
-                        {account.bank} Bank
+                      <CardTitle className="flex gap-2 items-center">
+                        <Landmark />
+                        {account.bank}
                       </CardTitle>
-                      <CardDescription>{account.accountNumber}</CardDescription>
+                      <CardDescription>
+                        {account.accountNumber}
+                      </CardDescription>
                     </CardHeader>
                     <CardContent>
-                      <p className="text-2xl font-bold text-foreground">
-                        {new Intl.NumberFormat("en-IN", {
-                          style: "currency",
-                          currency: "INR",
-                        }).format(account.balance)}
+                      <p className="text-xl font-bold">
+                        ₹{account.balance.toLocaleString()}
                       </p>
                     </CardContent>
                   </Card>
-                )) : (
-                  <p className="text-muted-foreground text-sm">No accounts found for the selected bank.</p>
-                )}
+                ))}
               </CardContent>
             </Card>
           </div>
+
           <div className="md:col-span-2">
             <Card>
               <CardHeader>
-                <CardTitle className="font-headline text-lg">Transactions</CardTitle>
-                <CardDescription>
-                  Recent transactions for {selectedAccount?.accountNumber}
-                </CardDescription>
+                <CardTitle>Transactions</CardTitle>
               </CardHeader>
               <CardContent>
-                {transactions.length > 0 ? (
+                {transactions.length ? (
                   <Table>
                     <TableHeader>
                       <TableRow>
@@ -196,19 +188,19 @@ export function Accounts() {
                     <TableBody>
                       {transactions.map((tx) => (
                         <TableRow key={tx.id}>
-                          <TableCell>{format(new Date(tx.date), 'dd/MM/yyyy')}</TableCell>
+                          <TableCell>
+                            {format(new Date(tx.date), "dd/MM/yyyy")}
+                          </TableCell>
                           <TableCell>{tx.description}</TableCell>
                           <TableCell className="text-right">
-                             <Badge
-                                variant={tx.type === 'debit' ? 'destructive' : 'default'}
-                                className={cn(
-                                    tx.type === 'credit' && 'bg-green-600 hover:bg-green-700 text-primary-foreground border-transparent'
-                                )}
-                                >
-                              {new Intl.NumberFormat("en-IN", {
-                                style: "currency",
-                                currency: "INR",
-                              }).format(tx.amount)}
+                            <Badge
+                              variant={
+                                tx.type === "debit"
+                                  ? "destructive"
+                                  : "default"
+                              }
+                            >
+                              ₹{tx.amount.toLocaleString()}
                             </Badge>
                           </TableCell>
                         </TableRow>
@@ -216,11 +208,9 @@ export function Accounts() {
                     </TableBody>
                   </Table>
                 ) : (
-                  <div className="flex h-40 items-center justify-center">
-                    <p className="text-muted-foreground">
-                      No transactions to display for this account.
-                    </p>
-                  </div>
+                  <p className="text-muted-foreground text-center">
+                    No transactions found.
+                  </p>
                 )}
               </CardContent>
             </Card>
