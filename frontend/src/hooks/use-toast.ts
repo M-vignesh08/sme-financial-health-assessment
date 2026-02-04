@@ -1,37 +1,46 @@
-"use client";
+"use client"
 
-import * as React from "react";
+import * as React from "react"
 
-type Toast = {
-  title?: string;
-  description?: string;
-  variant?: "default" | "destructive";
-};
+type ToastProps = {
+  title?: string
+  description?: string
+  variant?: "default" | "destructive"
+}
 
 type ToastContextType = {
-  toast: (toast: Toast) => void;
-};
+  toast: (props: ToastProps) => void
+}
 
-const ToastContext = React.createContext<ToastContextType | undefined>(undefined);
+const ToastContext = React.createContext<ToastContextType | undefined>(
+  undefined
+)
 
-export function ToastProvider({ children }: { children: React.ReactNode }) {
-  const toast = (toast: Toast) => {
-    console.log("Toast:", toast.title, toast.description);
-  };
+export function ToastProvider({
+  children,
+}: {
+  children: React.ReactNode
+}) {
+  const toast = React.useCallback((props: ToastProps) => {
+    // For now just log – UI handled by <Toaster />
+    console.log("Toast:", props)
+  }, [])
 
   return (
     <ToastContext.Provider value={{ toast }}>
       {children}
     </ToastContext.Provider>
-  );
+  )
 }
 
 export function useToast() {
-  const context = React.useContext(ToastContext);
+  const context = React.useContext(ToastContext)
+
   if (!context) {
     return {
-      toast: (_: Toast) => {},
-    };
+      toast: () => {},
+    }
   }
-  return context;
+
+  return context
 }
