@@ -4,10 +4,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import {
-  analyzeFinancialStatements,
-  type AnalyzeFinancialStatementsOutput,
-} from "@/ai/flows/analyze-financial-statements";
+
 import {
   Card,
   CardContent,
@@ -36,6 +33,28 @@ import { Loader2, TrendingUp, TrendingDown, Scale } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL!;
+
+/* ------------------ TYPES ------------------ */
+type BackendAnalysisResult = {
+  status: string;
+  basic_metrics: {
+    total_revenue: number;
+    total_expense: number;
+    net_profit: number;
+    profit_margin: number;
+  };
+  health_score: number;
+  health_score_explanation: string;
+  trends: any;
+  risk_flags: string[];
+  recommendations: string[];
+  analysis: {
+    summary: string;
+  };
+};
+
+/* ------------------ FORM ------------------ */
 const formSchema = z.object({
   businessType: z.string().min(1, "Please select a business type."),
 });
@@ -50,21 +69,10 @@ const businessTypes = [
   "Other",
 ];
 
-function fileToDataUri(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
-}
-
 export function FinancialStatementAnalysis() {
   const [file, setFile] = useState<File | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [result, setResult] = useState<AnalyzeFinancialStatementsOutput | null>(
-    null
-  );
+  const [result, setResult] = useState<BackendAnalysisResult | null>(null);
   const { toast } = useToast();
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -74,7 +82,8 @@ export function FinancialStatementAnalysis() {
     },
   });
 
-  async function onSubmit(values: z.infer<typeof formSchema>) {
+  /* ------------------ SUBMIT ------------------ */
+  async function onSubmit(_: z.infer<typeof formSchema>) {
     if (!file) {
       toast({
         title: "Error",
@@ -88,17 +97,25 @@ export function FinancialStatementAnalysis() {
     setResult(null);
 
     try {
-      const financialStatementDataUri = await fileToDataUri(file);
-      const analysisResult = await analyzeFinancialStatements({
-        ...values,
-        financialStatementDataUri,
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const res = await fetch(`${API_BASE}/analyze-financials`, {
+        method: "POST",
+        body: formData,
       });
-      setResult(analysisResult);
-    } catch (error) {
-      console.error("Analysis failed:", error);
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.detail || "Analysis failed");
+      }
+
+      const data: BackendAnalysisResult = await res.json();
+      setResult(data);
+    } catch (error: any) {
       toast({
         title: "Analysis Failed",
-        description: "An error occurred while analyzing the statement. Please try again.",
+        description: error.message || "Something went wrong",
         variant: "destructive",
       });
     } finally {
@@ -106,6 +123,7 @@ export function FinancialStatementAnalysis() {
     }
   }
 
+  /* ------------------ UI ------------------ */
   return (
     <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
       <div className="lg:col-span-1">
@@ -113,7 +131,7 @@ export function FinancialStatementAnalysis() {
           <CardHeader>
             <CardTitle className="font-headline">Analyze Statement</CardTitle>
             <CardDescription>
-              Upload your financial document and select your business type to get an AI-powered analysis.
+              Upload your financial document and select your business type to get analysis.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -130,10 +148,7 @@ export function FinancialStatementAnalysis() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Business Type</FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        defaultValue={field.value}
-                      >
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder="Select a business type" />
@@ -153,9 +168,7 @@ export function FinancialStatementAnalysis() {
                 />
 
                 <Button type="submit" className="w-full" disabled={isLoading}>
-                  {isLoading && (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  )}
+                  {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   Analyze
                 </Button>
               </form>
@@ -174,64 +187,42 @@ export function FinancialStatementAnalysis() {
           </CardHeader>
           <CardContent>
             {isLoading && <AnalysisSkeleton />}
+
             {!isLoading && !result && (
               <div className="flex h-[300px] flex-col items-center justify-center text-center">
                 <p className="text-lg font-medium text-muted-foreground">
                   Your analysis will appear here.
                 </p>
-                <p className="text-sm text-muted-foreground">
-                  Upload a document and click "Analyze" to begin.
-                </p>
               </div>
             )}
+
             {result && (
               <div className="space-y-6">
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
                   <MetricCard
                     title="Total Revenue"
-                    value={result.revenue}
+                    value={result.basic_metrics.total_revenue}
                     icon={<TrendingUp className="text-green-500" />}
                   />
                   <MetricCard
                     title="Total Expenses"
-                    value={result.expenses}
+                    value={result.basic_metrics.total_expense}
                     icon={<TrendingDown className="text-red-500" />}
                   />
                   <MetricCard
                     title="Profit Margin"
-                    value={result.profitMargin}
+                    value={result.basic_metrics.profit_margin}
                     isPercentage
                     icon={<Scale className="text-blue-500" />}
                   />
                 </div>
+
                 <Card>
                   <CardHeader>
-                    <CardTitle className="text-lg font-headline">AI Summary</CardTitle>
+                    <CardTitle className="text-lg font-headline">Summary</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <p className="text-sm text-foreground">{result.summary}</p>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-lg font-headline">Key Metrics</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <ul className="space-y-2">
-                      {result.keyMetrics.map((metric) => (
-                        <li
-                          key={metric.name}
-                          className="flex justify-between border-b pb-2"
-                        >
-                          <span className="text-sm font-medium capitalize text-muted-foreground">
-                            {metric.name.replace(/_/g, " ")}
-                          </span>
-                          <span className="text-sm font-semibold text-foreground">
-                            {metric.value}
-                          </span>
-                        </li>
-                      ))}
-                    </ul>
+                    <p className="text-sm">{result.analysis.summary}</p>
                   </CardContent>
                 </Card>
               </div>
@@ -243,7 +234,18 @@ export function FinancialStatementAnalysis() {
   );
 }
 
-function MetricCard({ title, value, icon, isPercentage = false }: { title: string; value: number; icon: React.ReactNode; isPercentage?: boolean }) {
+/* ------------------ HELPERS ------------------ */
+function MetricCard({
+  title,
+  value,
+  icon,
+  isPercentage = false,
+}: {
+  title: string;
+  value: number;
+  icon: React.ReactNode;
+  isPercentage?: boolean;
+}) {
   const formattedValue = isPercentage
     ? `${value.toFixed(2)}%`
     : new Intl.NumberFormat("en-US", {
@@ -253,12 +255,12 @@ function MetricCard({ title, value, icon, isPercentage = false }: { title: strin
 
   return (
     <Card>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+      <CardHeader className="flex flex-row items-center justify-between pb-2">
         <CardTitle className="text-sm font-medium">{title}</CardTitle>
         {icon}
       </CardHeader>
       <CardContent>
-        <div className="text-2xl font-bold font-headline">{formattedValue}</div>
+        <div className="text-2xl font-bold">{formattedValue}</div>
       </CardContent>
     </Card>
   );
@@ -268,12 +270,11 @@ function AnalysisSkeleton() {
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <Skeleton className="h-[120px] w-full" />
-        <Skeleton className="h-[120px] w-full" />
-        <Skeleton className="h-[120px] w-full" />
+        <Skeleton className="h-[120px]" />
+        <Skeleton className="h-[120px]" />
+        <Skeleton className="h-[120px]" />
       </div>
-      <Skeleton className="h-[150px] w-full" />
-      <Skeleton className="h-[200px] w-full" />
+      <Skeleton className="h-[150px]" />
     </div>
   );
 }
