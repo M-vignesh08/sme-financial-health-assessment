@@ -227,6 +227,21 @@ export function FinancialStatementAnalysis() {
                     <p className="text-sm">{result.analysis.summary}</p>
                   </CardContent>
                 </Card>
+                {/* HEALTH SCORE EXPLANATION */}
+                {result.health_score_explanation && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-lg font-headline">
+                        Why This Health Score?
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-sm text-muted-foreground">
+                        {result.health_score_explanation}
+                      </p>
+                    </CardContent>
+                  </Card>
+                )}
 
                 {/* ✅ AI INSIGHTS (ADDED) */}
                 {result.ai_insights && result.ai_insights.length > 0 && (
