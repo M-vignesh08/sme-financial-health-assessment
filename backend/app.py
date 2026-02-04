@@ -30,16 +30,16 @@ from backend.analysis.financial_analysis import analyze_financial_health
 # --------------------------------------------------
 app = FastAPI(
     title="SME Financial Health Assessment API",
-    version="0.2.1"  # 🔧 version bump
+    version="0.2.1"
 )
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],   # for development
+    allow_origins=["*"],   # dev only
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
 
 UPLOAD_DIR = "uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
@@ -91,10 +91,8 @@ async def analyze_financials(file: UploadFile = File(...)):
         # Phase 1 validation
         parse_financial_file(file_path)
 
-        # Load CSV
-        # Load CSV / TSV / Excel-exported files safely
+        # Load CSV safely
         df = pd.read_csv(file_path, sep=None, engine="python")
-
 
         # -----------------------------
         # DEFENSIVE CHECKS
@@ -102,7 +100,6 @@ async def analyze_financials(file: UploadFile = File(...)):
         if df.empty:
             raise ValueError("Uploaded file contains no financial records")
 
-        # Normalize column names
         df.columns = [col.strip().lower() for col in df.columns]
 
         # -----------------------------
@@ -139,21 +136,28 @@ async def analyze_financials(file: UploadFile = File(...)):
             raise ValueError("Financial columns contain no valid numeric data")
 
         # -----------------------------
-        # NUMERICAL METRICS
+        # METRICS
         # -----------------------------
         basic_metrics = compute_basic_metrics(df, revenue_col, expense_col)
+
+        # 🔧 FIX: normalize profit margin key
+        if "profit_margin_percent" in basic_metrics:
+            basic_metrics["profit_margin"] = basic_metrics.pop("profit_margin_percent")
+
         cashflow_metrics = compute_cashflow_metrics(
             df,
             revenue_col,
             expense_col,
             cashflow_col
         )
+
         health_score = compute_health_score(
             basic_metrics,
             cashflow_metrics
         )
+
         # -----------------------------
-        # PHASE 2B: ADVANCED INSIGHTS
+        # INSIGHTS
         # -----------------------------
         trends = generate_trends(df, revenue_col, expense_col)
 
@@ -169,9 +173,6 @@ async def analyze_financials(file: UploadFile = File(...)):
             cashflow_metrics
         )
 
-        # -----------------------------
-        # BUSINESS INTERPRETATION
-        # -----------------------------
         analysis = analyze_financial_health(
             basic_metrics,
             cashflow_metrics,
@@ -194,7 +195,4 @@ async def analyze_financials(file: UploadFile = File(...)):
         raise HTTPException(status_code=400, detail=str(ve))
 
     except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=str(e)
-        )
+        raise HTTPException(status_code=500, detail=str(e))
