@@ -3,6 +3,8 @@
 import React, { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 
+export const dynamic = "force-dynamic";
+
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/layout/app-sidebar";
 import { AppHeader } from "@/components/layout/app-header";
@@ -30,7 +32,7 @@ function DashboardOverviewSkeleton() {
 }
 
 /* ---------------------------------------------
-   Dynamic imports (client only)
+   Dynamic imports (CLIENT ONLY)
 --------------------------------------------- */
 const DashboardOverview = dynamic(
   () => import("@/components/features/dashboard-overview").then(m => m.DashboardOverview),
@@ -115,9 +117,8 @@ export default function Home() {
     setMounted(true);
   }, []);
 
-  if (!mounted) {
-    return null; // 🚫 Prevent build-time execution
-  }
+  // 🚫 Prevent ANY render during build / prerender
+  if (!mounted) return null;
 
   const ActiveComponent = tabComponents[activeTab];
 
