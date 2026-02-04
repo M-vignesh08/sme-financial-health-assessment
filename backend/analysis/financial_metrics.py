@@ -2,8 +2,8 @@ import pandas as pd
 
 
 def compute_basic_metrics(df: pd.DataFrame, revenue_col: str, expense_col: str):
-    total_revenue = df[revenue_col].sum()
-    total_expense = df[expense_col].sum()
+    total_revenue = float(df[revenue_col].sum())
+    total_expense = float(df[expense_col].sum())
     net_profit = total_revenue - total_expense
 
     profit_margin = (
@@ -27,17 +27,16 @@ def compute_cashflow_metrics(
     cashflow_col: str | None = None
 ):
     if cashflow_col and cashflow_col in df.columns:
-        df[cashflow_col] = pd.to_numeric(df[cashflow_col], errors="coerce")
-        avg_cashflow = df[cashflow_col].mean()
+        avg_cashflow = float(pd.to_numeric(df[cashflow_col], errors="coerce").mean())
     else:
-        df["__cashflow__"] = df[revenue_col] - df[expense_col]
-        avg_cashflow = df["__cashflow__"].mean()
+        avg_cashflow = float((df[revenue_col] - df[expense_col]).mean())
 
-    status = (
-        "positive" if avg_cashflow > 0
-        else "negative" if avg_cashflow < 0
-        else "neutral"
-    )
+    if avg_cashflow > 0:
+        status = "positive"
+    elif avg_cashflow < 0:
+        status = "negative"
+    else:
+        status = "neutral"
 
     return {
         "average_cashflow": round(avg_cashflow, 2),
@@ -61,4 +60,4 @@ def compute_health_score(basic_metrics: dict, cashflow_metrics: dict):
     elif cashflow_metrics["cashflow_status"] == "negative":
         score -= 15
 
-    return max(0, min(score, 100))
+    return int(max(0, min(score, 100)))
