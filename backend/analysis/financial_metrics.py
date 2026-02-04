@@ -1,18 +1,15 @@
 import pandas as pd
 
 
-def compute_basic_metrics(df: pd.DataFrame, revenue_col: str, expense_col: str):
-    """
-    Computes basic financial metrics using dynamic column names.
-    """
-
+def compute_basic_metrics(df, revenue_col, expense_col):
     total_revenue = df[revenue_col].sum()
     total_expense = df[expense_col].sum()
     net_profit = total_revenue - total_expense
 
     profit_margin = (
         (net_profit / total_revenue) * 100
-        if total_revenue > 0 else 0
+        if total_revenue != 0
+        else 0
     )
 
     return {
@@ -29,16 +26,10 @@ def compute_cashflow_metrics(
     expense_col: str,
     cashflow_col: str | None = None
 ):
-    """
-    Computes cashflow metrics safely.
-    """
-
-    # If cashflow column already exists, use it
     if cashflow_col and cashflow_col in df.columns:
         df[cashflow_col] = pd.to_numeric(df[cashflow_col], errors="coerce")
         avg_cashflow = df[cashflow_col].mean()
     else:
-        # Compute cashflow manually
         df["__cashflow__"] = df[revenue_col] - df[expense_col]
         avg_cashflow = df["__cashflow__"].mean()
 
@@ -56,10 +47,6 @@ def compute_cashflow_metrics(
 
 
 def compute_health_score(basic_metrics: dict, cashflow_metrics: dict):
-    """
-    Rule-based health score (0–100)
-    """
-
     score = 50
 
     if basic_metrics["net_profit"] > 0:
