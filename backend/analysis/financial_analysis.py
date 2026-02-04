@@ -3,33 +3,25 @@ def analyze_financial_health(
     cashflow_metrics: dict,
     health_score: int
 ) -> dict:
-    """
-    Interprets computed metrics into business insights.
-    No calculations here — only reasoning.
-    """
 
     insights = []
     risks = []
 
-    # Profitability insights
     if basic_metrics["net_profit"] <= 0:
         risks.append("Business is operating at a loss.")
     else:
         insights.append("Business is profitable.")
 
-    # ✅ FIXED KEY NAME
     if basic_metrics["profit_margin"] < 10:
         risks.append("Low profit margin indicates cost inefficiency.")
     elif basic_metrics["profit_margin"] > 25:
         insights.append("Strong profit margin compared to industry norms.")
 
-    # Cashflow insights
-    if cashflow_metrics.get("cashflow_status") == "negative":
-        risks.append("Irregular cash flow detected.")
+    if cashflow_metrics["cashflow_status"] == "negative":
+        risks.append("Irregular or negative cash flow detected.")
     else:
         insights.append("Stable positive cash flow.")
 
-    # Overall health
     if health_score >= 80:
         status = "Excellent"
     elif health_score >= 60:
