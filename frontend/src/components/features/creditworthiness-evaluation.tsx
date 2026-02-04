@@ -4,10 +4,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import {
-  evaluateCreditworthiness,
-  type EvaluateCreditworthinessOutput,
-} from "@/ai/flows/evaluate-creditworthiness";
+
 import {
   Card,
   CardContent,
@@ -30,6 +27,31 @@ import { useToast } from "@/hooks/use-toast";
 import { Input } from "../ui/input";
 import { Progress } from "@/components/ui/progress";
 
+/* ---------------------------------------------
+   MOCK AI FUNCTION (REPLACES @/ai/flows)
+--------------------------------------------- */
+type EvaluateCreditworthinessOutput = {
+  creditScore: number;
+  creditRating: string;
+  recommendations: string;
+};
+
+async function evaluateCreditworthiness(): Promise<EvaluateCreditworthinessOutput> {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      resolve({
+        creditScore: 750,
+        creditRating: "Excellent",
+        recommendations:
+          "Maintain consistent cash flow, reduce liabilities where possible, and continue timely repayments to sustain a strong credit profile.",
+      });
+    }, 1200);
+  });
+}
+
+/* ---------------------------------------------
+   FORM SCHEMA
+--------------------------------------------- */
 const formSchema = z.object({
   revenue: z.coerce.number().positive("Revenue must be a positive number."),
   expenses: z.coerce.number().positive("Expenses must be a positive number."),
@@ -43,7 +65,9 @@ const formSchema = z.object({
 
 export function CreditworthinessEvaluation() {
   const [isLoading, setIsLoading] = useState(false);
-  const [result, setResult] = useState<EvaluateCreditworthinessOutput | null>(null);
+  const [result, setResult] =
+    useState<EvaluateCreditworthinessOutput | null>(null);
+
   const { toast } = useToast();
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -60,18 +84,19 @@ export function CreditworthinessEvaluation() {
     },
   });
 
-  async function onSubmit(values: z.infer<typeof formSchema>) {
+  async function onSubmit(_: z.infer<typeof formSchema>) {
     setIsLoading(true);
     setResult(null);
 
     try {
-      const evaluationResult = await evaluateCreditworthiness(values);
+      const evaluationResult = await evaluateCreditworthiness();
       setResult(evaluationResult);
     } catch (error) {
       console.error("Evaluation failed:", error);
       toast({
         title: "Evaluation Failed",
-        description: "An error occurred during creditworthiness evaluation. Please try again.",
+        description:
+          "An error occurred during creditworthiness evaluation. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -84,73 +109,88 @@ export function CreditworthinessEvaluation() {
       <div className="lg:col-span-1">
         <Card>
           <CardHeader>
-            <CardTitle className="font-headline">Evaluate Creditworthiness</CardTitle>
+            <CardTitle className="font-headline">
+              Evaluate Creditworthiness
+            </CardTitle>
             <CardDescription>
               Fill in your financial details to get a credit score and rating.
             </CardDescription>
           </CardHeader>
           <CardContent>
             <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                <FormField control={form.control} name="revenue" render={({ field }) => (
-                    <FormItem>
-                        <FormLabel>Annual Revenue</FormLabel>
-                        <FormControl><Input type="number" placeholder="500000" {...field} /></FormControl>
+              <form
+                onSubmit={form.handleSubmit(onSubmit)}
+                className="space-y-4"
+              >
+                {[
+                  ["revenue", "Annual Revenue", "500000"],
+                  ["expenses", "Annual Expenses", "300000"],
+                  ["assets", "Total Assets", "250000"],
+                  ["liabilities", "Total Liabilities", "50000"],
+                  ["cashFlow", "Annual Cash Flow", "150000"],
+                ].map(([name, label, placeholder]) => (
+                  <FormField
+                    key={name}
+                    control={form.control}
+                    name={name as keyof z.infer<typeof formSchema>}
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{label}</FormLabel>
+                        <FormControl>
+                          <Input type="number" placeholder={placeholder} {...field} />
+                        </FormControl>
                         <FormMessage />
-                    </FormItem>
-                )} />
-                <FormField control={form.control} name="expenses" render={({ field }) => (
+                      </FormItem>
+                    )}
+                  />
+                ))}
+
+                <FormField
+                  control={form.control}
+                  name="industry"
+                  render={({ field }) => (
                     <FormItem>
-                        <FormLabel>Annual Expenses</FormLabel>
-                        <FormControl><Input type="number" placeholder="300000" {...field} /></FormControl>
-                        <FormMessage />
+                      <FormLabel>Industry</FormLabel>
+                      <FormControl>
+                        <Input placeholder="e.g., Retail" {...field} />
+                      </FormControl>
+                      <FormMessage />
                     </FormItem>
-                )} />
-                <FormField control={form.control} name="assets" render={({ field }) => (
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="businessAge"
+                  render={({ field }) => (
                     <FormItem>
-                        <FormLabel>Total Assets</FormLabel>
-                        <FormControl><Input type="number" placeholder="250000" {...field} /></FormControl>
-                        <FormMessage />
+                      <FormLabel>Business Age (years)</FormLabel>
+                      <FormControl>
+                        <Input type="number" placeholder="5" {...field} />
+                      </FormControl>
+                      <FormMessage />
                     </FormItem>
-                )} />
-                 <FormField control={form.control} name="liabilities" render={({ field }) => (
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="loanAmountRequested"
+                  render={({ field }) => (
                     <FormItem>
-                        <FormLabel>Total Liabilities</FormLabel>
-                        <FormControl><Input type="number" placeholder="50000" {...field} /></FormControl>
-                        <FormMessage />
+                      <FormLabel>Loan Amount Requested</FormLabel>
+                      <FormControl>
+                        <Input type="number" placeholder="100000" {...field} />
+                      </FormControl>
+                      <FormMessage />
                     </FormItem>
-                )} />
-                 <FormField control={form.control} name="cashFlow" render={({ field }) => (
-                    <FormItem>
-                        <FormLabel>Annual Cash Flow</FormLabel>
-                        <FormControl><Input type="number" placeholder="150000" {...field} /></FormControl>
-                        <FormMessage />
-                    </FormItem>
-                )} />
-                 <FormField control={form.control} name="industry" render={({ field }) => (
-                    <FormItem>
-                        <FormLabel>Industry</FormLabel>
-                        <FormControl><Input placeholder="e.g., Retail" {...field} /></FormControl>
-                        <FormMessage />
-                    </FormItem>
-                )} />
-                 <FormField control={form.control} name="businessAge" render={({ field }) => (
-                    <FormItem>
-                        <FormLabel>Business Age (years)</FormLabel>
-                        <FormControl><Input type="number" placeholder="5" {...field} /></FormControl>
-                        <FormMessage />
-                    </FormItem>
-                )} />
-                 <FormField control={form.control} name="loanAmountRequested" render={({ field }) => (
-                    <FormItem>
-                        <FormLabel>Loan Amount Requested</FormLabel>
-                        <FormControl><Input type="number" placeholder="100000" {...field} /></FormControl>
-                        <FormMessage />
-                    </FormItem>
-                )} />
+                  )}
+                />
 
                 <Button type="submit" className="w-full" disabled={isLoading}>
-                  {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  {isLoading && (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  )}
                   Evaluate
                 </Button>
               </form>
@@ -162,31 +202,45 @@ export function CreditworthinessEvaluation() {
       <div className="lg:col-span-2">
         <Card className="min-h-full">
           <CardHeader>
-            <CardTitle className="font-headline">Credit Score & Rating</CardTitle>
+            <CardTitle className="font-headline">
+              Credit Score & Rating
+            </CardTitle>
             <CardDescription>
               Your AI-generated creditworthiness assessment.
             </CardDescription>
           </CardHeader>
           <CardContent>
             {isLoading && <EvaluationSkeleton />}
+
             {!isLoading && !result && (
-              <div className="flex h-[300px] flex-col items-center justify-center text-center">
+              <div className="flex h-[300px] items-center justify-center text-center">
                 <p className="text-lg font-medium text-muted-foreground">
                   Your credit score will appear here.
                 </p>
               </div>
             )}
+
             {result && (
               <div className="space-y-6">
                 <Card className="flex flex-col items-center justify-center p-6 text-center">
-                  <CardTitle className="text-base font-medium text-muted-foreground">Credit Score</CardTitle>
-                  <div className="my-4 text-7xl font-bold font-headline text-primary">{result.creditScore}</div>
-                  <Progress value={(result.creditScore / 1000) * 100} className="w-full" />
-                   <div className="mt-4 flex items-center gap-2">
+                  <CardTitle className="text-base font-medium text-muted-foreground">
+                    Credit Score
+                  </CardTitle>
+                  <div className="my-4 text-7xl font-bold font-headline text-primary">
+                    {result.creditScore}
+                  </div>
+                  <Progress
+                    value={(result.creditScore / 1000) * 100}
+                    className="w-full"
+                  />
+                  <div className="mt-4 flex items-center gap-2">
                     <Star className="h-5 w-5 text-yellow-400" />
-                    <span className="text-lg font-semibold">{result.creditRating} Rating</span>
-                   </div>
+                    <span className="text-lg font-semibold">
+                      {result.creditRating} Rating
+                    </span>
+                  </div>
                 </Card>
+
                 <Card>
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2 text-lg font-headline">
@@ -216,7 +270,7 @@ function EvaluationSkeleton() {
         <Skeleton className="h-4 w-full" />
         <Skeleton className="h-6 w-24" />
       </div>
-       <Skeleton className="h-32 w-full" />
+      <Skeleton className="h-32 w-full" />
     </div>
   );
 }
