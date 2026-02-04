@@ -17,13 +17,14 @@ def analyze_financial_health(
     else:
         insights.append("Business is profitable.")
 
-    if basic_metrics["profit_margin_percent"] < 10:
+    # ✅ FIXED KEY NAME
+    if basic_metrics["profit_margin"] < 10:
         risks.append("Low profit margin indicates cost inefficiency.")
-    elif basic_metrics["profit_margin_percent"] > 25:
+    elif basic_metrics["profit_margin"] > 25:
         insights.append("Strong profit margin compared to industry norms.")
 
     # Cashflow insights
-    if cashflow_metrics["negative_months"] > 0:
+    if cashflow_metrics.get("cashflow_status") == "negative":
         risks.append("Irregular cash flow detected.")
     else:
         insights.append("Stable positive cash flow.")
