@@ -1,23 +1,6 @@
 import pandas as pd
 
 
-def compute_basic_metrics(df, revenue_col, expense_col):
-    total_revenue = df[revenue_col].sum()
-    total_expense = df[expense_col].sum()
-    net_profit = total_revenue - total_expense
-
-    profit_margin = (
-        (net_profit / total_revenue) * 100
-        if total_revenue != 0
-        else 0
-    )
-
-    return {
-        "total_revenue": round(total_revenue, 2),
-        "total_expense": round(total_expense, 2),
-        "net_profit": round(net_profit, 2),
-        "profit_margin": round(profit_margin, 2)
-    }
 
 
 def compute_cashflow_metrics(
@@ -63,3 +46,4 @@ def compute_health_score(basic_metrics: dict, cashflow_metrics: dict):
         score -= 15
 
     return max(0, min(score, 100))
+
