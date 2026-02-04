@@ -1,9 +1,9 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
-import dynamic from "next/dynamic";
-
 export const dynamic = "force-dynamic";
+
+import React, { useState } from "react";
+import dynamic from "next/dynamic";
 
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/layout/app-sidebar";
@@ -11,9 +11,7 @@ import { AppHeader } from "@/components/layout/app-header";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 
-/* ---------------------------------------------
-   Skeleton
---------------------------------------------- */
+/* Skeleton */
 function DashboardOverviewSkeleton() {
   return (
     <div className="flex-1 space-y-4">
@@ -31,9 +29,7 @@ function DashboardOverviewSkeleton() {
   );
 }
 
-/* ---------------------------------------------
-   Dynamic imports (CLIENT ONLY)
---------------------------------------------- */
+/* Dynamic imports */
 const DashboardOverview = dynamic(
   () => import("@/components/features/dashboard-overview").then(m => m.DashboardOverview),
   { ssr: false, loading: () => <DashboardOverviewSkeleton /> }
@@ -79,9 +75,7 @@ const Integrations = dynamic(
   { ssr: false }
 );
 
-/* ---------------------------------------------
-   Config
---------------------------------------------- */
+/* Config */
 const tabComponents: Record<string, React.ComponentType> = {
   dashboard: DashboardOverview,
   analysis: FinancialStatementAnalysis,
@@ -106,30 +100,20 @@ const tabTitles: Record<string, string> = {
   integrations: "Integrations",
 };
 
-/* ---------------------------------------------
-   Page
---------------------------------------------- */
 export default function Home() {
-  const [mounted, setMounted] = useState(false);
   const [activeTab, setActiveTab] = useState("dashboard");
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  // 🚫 Prevent ANY render during build / prerender
-  if (!mounted) return null;
-
-  const ActiveComponent = tabComponents[activeTab];
+  const ActiveComponent =
+    tabComponents?.[activeTab] ?? (() => null);
 
   return (
     <SidebarProvider>
       <AppSidebar activeTab={activeTab} setActiveTab={setActiveTab} />
       <SidebarInset>
-        <AppHeader title={tabTitles[activeTab]} />
+        <AppHeader title={tabTitles?.[activeTab] ?? ""} />
         <main className="flex-1 overflow-y-auto">
           <Tabs value={activeTab} className="h-full">
-            {Object.keys(tabComponents).map(tab => (
+            {Object.keys(tabComponents ?? {}).map((tab) => (
               <TabsContent key={tab} value={tab} className="h-full p-4 md:p-6 mt-0">
                 {activeTab === tab && <ActiveComponent />}
               </TabsContent>
