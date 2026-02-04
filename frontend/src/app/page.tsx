@@ -1,14 +1,7 @@
 "use client";
 
-/* ---------------------------------------------
-   Page runtime config (NO prerendering)
---------------------------------------------- */
-export const runtime = "nodejs";
-export const dynamic = "force-dynamic";
-export const revalidate = 0;
-
-import React, { useState } from "react";
-import nextDynamic from "next/dynamic";
+import React, { useEffect, useState } from "react";
+import dynamic from "next/dynamic";
 
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/layout/app-sidebar";
@@ -37,77 +30,50 @@ function DashboardOverviewSkeleton() {
 }
 
 /* ---------------------------------------------
-   Client-only dynamic imports
+   Dynamic imports (client only)
 --------------------------------------------- */
-const DashboardOverview = nextDynamic(
-  () =>
-    import("@/components/features/dashboard-overview").then(
-      (m) => m.DashboardOverview
-    ),
+const DashboardOverview = dynamic(
+  () => import("@/components/features/dashboard-overview").then(m => m.DashboardOverview),
   { ssr: false, loading: () => <DashboardOverviewSkeleton /> }
 );
 
-const FinancialStatementAnalysis = nextDynamic(
-  () =>
-    import("@/components/features/financial-statement-analysis").then(
-      (m) => m.FinancialStatementAnalysis
-    ),
+const FinancialStatementAnalysis = dynamic(
+  () => import("@/components/features/financial-statement-analysis").then(m => m.FinancialStatementAnalysis),
   { ssr: false }
 );
 
-const CashFlowPatterns = nextDynamic(
-  () =>
-    import("@/components/features/cash-flow-patterns").then(
-      (m) => m.CashFlowPatterns
-    ),
+const CashFlowPatterns = dynamic(
+  () => import("@/components/features/cash-flow-patterns").then(m => m.CashFlowPatterns),
   { ssr: false }
 );
 
-const CreditworthinessEvaluation = nextDynamic(
-  () =>
-    import("@/components/features/creditworthiness-evaluation").then(
-      (m) => m.CreditworthinessEvaluation
-    ),
+const CreditworthinessEvaluation = dynamic(
+  () => import("@/components/features/creditworthiness-evaluation").then(m => m.CreditworthinessEvaluation),
   { ssr: false }
 );
 
-const PersonalizedRecommendations = nextDynamic(
-  () =>
-    import("@/components/features/personalized-recommendations").then(
-      (m) => m.PersonalizedRecommendations
-    ),
+const PersonalizedRecommendations = dynamic(
+  () => import("@/components/features/personalized-recommendations").then(m => m.PersonalizedRecommendations),
   { ssr: false }
 );
 
-const BookkeepingAssistance = nextDynamic(
-  () =>
-    import("@/components/features/bookkeeping-assistance").then(
-      (m) => m.BookkeepingAssistance
-    ),
+const BookkeepingAssistance = dynamic(
+  () => import("@/components/features/bookkeeping-assistance").then(m => m.BookkeepingAssistance),
   { ssr: false }
 );
 
-const FinancialForecasting = nextDynamic(
-  () =>
-    import("@/components/features/financial-forecasting").then(
-      (m) => m.FinancialForecasting
-    ),
+const FinancialForecasting = dynamic(
+  () => import("@/components/features/financial-forecasting").then(m => m.FinancialForecasting),
   { ssr: false }
 );
 
-const Accounts = nextDynamic(
-  () =>
-    import("@/components/features/accounts").then(
-      (m) => m.Accounts
-    ),
+const Accounts = dynamic(
+  () => import("@/components/features/accounts").then(m => m.Accounts),
   { ssr: false }
 );
 
-const Integrations = nextDynamic(
-  () =>
-    import("@/components/features/integrations").then(
-      (m) => m.Integrations
-    ),
+const Integrations = dynamic(
+  () => import("@/components/features/integrations").then(m => m.Integrations),
   { ssr: false }
 );
 
@@ -142,23 +108,28 @@ const tabTitles: Record<string, string> = {
    Page
 --------------------------------------------- */
 export default function Home() {
+  const [mounted, setMounted] = useState(false);
   const [activeTab, setActiveTab] = useState("dashboard");
 
-  const ActiveComponent = tabComponents[activeTab] ?? (() => null);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) {
+    return null; // 🚫 Prevent build-time execution
+  }
+
+  const ActiveComponent = tabComponents[activeTab];
 
   return (
     <SidebarProvider>
       <AppSidebar activeTab={activeTab} setActiveTab={setActiveTab} />
       <SidebarInset>
-        <AppHeader title={tabTitles[activeTab] ?? ""} />
+        <AppHeader title={tabTitles[activeTab]} />
         <main className="flex-1 overflow-y-auto">
           <Tabs value={activeTab} className="h-full">
-            {Object.keys(tabComponents).map((tab) => (
-              <TabsContent
-                key={tab}
-                value={tab}
-                className="h-full p-4 md:p-6 mt-0"
-              >
+            {Object.keys(tabComponents).map(tab => (
+              <TabsContent key={tab} value={tab} className="h-full p-4 md:p-6 mt-0">
                 {activeTab === tab && <ActiveComponent />}
               </TabsContent>
             ))}
