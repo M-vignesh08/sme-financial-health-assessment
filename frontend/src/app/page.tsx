@@ -1,9 +1,14 @@
 "use client";
 
+/* ---------------------------------------------
+   Page runtime config (NO prerendering)
+--------------------------------------------- */
+export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 import React, { useState } from "react";
-import dynamic from "next/dynamic";
+import nextDynamic from "next/dynamic";
 
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/layout/app-sidebar";
@@ -32,76 +37,76 @@ function DashboardOverviewSkeleton() {
 }
 
 /* ---------------------------------------------
-   Dynamic imports (client-only)
+   Client-only dynamic imports
 --------------------------------------------- */
-const DashboardOverview = dynamic(
+const DashboardOverview = nextDynamic(
   () =>
     import("@/components/features/dashboard-overview").then(
-      (mod) => mod.DashboardOverview
+      (m) => m.DashboardOverview
     ),
   { ssr: false, loading: () => <DashboardOverviewSkeleton /> }
 );
 
-const FinancialStatementAnalysis = dynamic(
+const FinancialStatementAnalysis = nextDynamic(
   () =>
     import("@/components/features/financial-statement-analysis").then(
-      (mod) => mod.FinancialStatementAnalysis
+      (m) => m.FinancialStatementAnalysis
     ),
   { ssr: false }
 );
 
-const CashFlowPatterns = dynamic(
+const CashFlowPatterns = nextDynamic(
   () =>
     import("@/components/features/cash-flow-patterns").then(
-      (mod) => mod.CashFlowPatterns
+      (m) => m.CashFlowPatterns
     ),
   { ssr: false }
 );
 
-const CreditworthinessEvaluation = dynamic(
+const CreditworthinessEvaluation = nextDynamic(
   () =>
     import("@/components/features/creditworthiness-evaluation").then(
-      (mod) => mod.CreditworthinessEvaluation
+      (m) => m.CreditworthinessEvaluation
     ),
   { ssr: false }
 );
 
-const PersonalizedRecommendations = dynamic(
+const PersonalizedRecommendations = nextDynamic(
   () =>
     import("@/components/features/personalized-recommendations").then(
-      (mod) => mod.PersonalizedRecommendations
+      (m) => m.PersonalizedRecommendations
     ),
   { ssr: false }
 );
 
-const BookkeepingAssistance = dynamic(
+const BookkeepingAssistance = nextDynamic(
   () =>
     import("@/components/features/bookkeeping-assistance").then(
-      (mod) => mod.BookkeepingAssistance
+      (m) => m.BookkeepingAssistance
     ),
   { ssr: false }
 );
 
-const FinancialForecasting = dynamic(
+const FinancialForecasting = nextDynamic(
   () =>
     import("@/components/features/financial-forecasting").then(
-      (mod) => mod.FinancialForecasting
+      (m) => m.FinancialForecasting
     ),
   { ssr: false }
 );
 
-const Accounts = dynamic(
+const Accounts = nextDynamic(
   () =>
     import("@/components/features/accounts").then(
-      (mod) => mod.Accounts
+      (m) => m.Accounts
     ),
   { ssr: false }
 );
 
-const Integrations = dynamic(
+const Integrations = nextDynamic(
   () =>
     import("@/components/features/integrations").then(
-      (mod) => mod.Integrations
+      (m) => m.Integrations
     ),
   { ssr: false }
 );
@@ -139,8 +144,7 @@ const tabTitles: Record<string, string> = {
 export default function Home() {
   const [activeTab, setActiveTab] = useState("dashboard");
 
-  const ActiveComponent =
-    tabComponents[activeTab] ?? (() => <div />);
+  const ActiveComponent = tabComponents[activeTab] ?? (() => null);
 
   return (
     <SidebarProvider>
